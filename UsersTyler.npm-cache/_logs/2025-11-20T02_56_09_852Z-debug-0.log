@@ -1,0 +1,34 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Users\tyler\AppData\Roaming\npm\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.4.2
+2 info using node@v22.17.0
+3 silly config load:file:C:\Users\tyler\AppData\Roaming\npm\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\tyler\.npmrc
+5 silly config load:file:C:\Users\tyler\AppData\Roaming\npm\etc\npmrc
+6 verbose title npm init
+7 verbose argv "init" "--yes"
+8 verbose logfile logs-max:10 dir:C:\Users\tyler\Desktop\recallbricks-docs\UsersTyler.npm-cache\_logs\2025-11-20T02_56_09_852Z-
+9 verbose logfile C:\Users\tyler\Desktop\recallbricks-docs\UsersTyler.npm-cache\_logs\2025-11-20T02_56_09_852Z-debug-0.log
+10 silly logfile done cleaning log files
+11 http fetch GET 200 https://registry.npmjs.org/npm 315ms
+12 silly package data {
+12 silly package data   name: 'recallbricks-docs',
+12 silly package data   version: '1.0.0',
+12 silly package data   description: '',
+12 silly package data   main: 'index.js',
+12 silly package data   scripts: { test: 'echo "Error: no test specified" && exit 1' },
+12 silly package data   keywords: [],
+12 silly package data   author: '',
+12 silly package data   license: 'ISC',
+12 silly package data   type: 'commonjs'
+12 silly package data }
+13 verbose cwd C:\Users\tyler\Desktop\recallbricks-docs
+14 verbose os Windows_NT 10.0.19045
+15 verbose node v22.17.0
+16 verbose npm  v11.4.2
+17 notice
+17 notice New [33mminor[39m version of npm available! [33m11.4.2[39m -> [34m11.6.3[39m
+17 notice Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.6.3[39m
+17 notice To update run: [4mnpm install -g npm@11.6.3[24m
+17 notice  { force: true, [Symbol(proc-log.meta)]: true }
+18 verbose exit 0
+19 info ok
