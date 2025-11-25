@@ -98,7 +98,7 @@ Yes, that's how it works! Your memories are stored securely:
 ### Can I delete my data?
 
 Yes, anytime:
-- Delete specific memories: `rb.memories.delete(id)`
+- Delete specific memories: Use REST API `DELETE /v1/memories/{id}`
 - Delete all data: Contact support@recallbricks.com
 
 Data deletion is immediate and permanent (GDPR compliant).
@@ -185,23 +185,45 @@ console.log(comparison.topPerformer);
 
 ### Can I use RecallBricks with LangChain?
 
-Yes! RecallBricks works great with LangChain:
+Yes! RecallBricks works great with LangChain.
 
+**TypeScript/JavaScript:**
 ```typescript
 import { RecallBricks } from 'recallbricks';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 
-const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 const llm = new ChatOpenAI();
 
 // Get context from RecallBricks
-const context = await rb.memories.search({ query: userMessage });
+const context = await rb.search(userMessage, { limit: 5 });
 
 // Use with LLM
 const response = await llm.call([
   { role: 'system', content: `Context: ${JSON.stringify(context)}` },
   { role: 'user', content: userMessage }
 ]);
+```
+
+**Python (using recallbricks-langchain):**
+```python
+from recallbricks_langchain import RecallBricksMemory
+
+# Initialize LangChain memory adapter
+memory = RecallBricksMemory(
+    agent_id='chatbot',
+    service_token='your-api-key-here',
+    api_url='https://recallbricks-api-clean.onrender.com'
+)
+
+# Use with LangChain chains
+memory.save_context(
+    {"input": "User question"},
+    {"output": "Bot response"}
+)
+
+# Load relevant memories
+variables = memory.load_memory_variables({"input": "What did we discuss?"})
 ```
 
 ### Can I self-host RecallBricks?

@@ -449,15 +449,12 @@ L3: Database (PostgreSQL + Pinecone)
 SDK automatically batches requests:
 
 ```typescript
-// Individual requests batched into one
-const [mem1, mem2, mem3] = await Promise.all([
-  rb.memories.get('mem_1'),
-  rb.memories.get('mem_2'),
-  rb.memories.get('mem_3')
-]);
-
-// Sent as single batch request:
+// Note: Direct memory retrieval by ID requires REST API
+// Individual requests can be batched:
 // GET /v1/memories/batch?ids=mem_1,mem_2,mem_3
+
+// For search operations, use the SDK:
+const results = await rb.search(query, { limit: 10 });
 ```
 
 ### 3. Connection Pooling

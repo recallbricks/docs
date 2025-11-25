@@ -10,11 +10,10 @@ Production-ready patterns for using RecallBricks effectively.
 
 ```typescript
 // ✅ Start here
-const results = await rb.memories.search({ query: 'user preferences' });
+const results = await rb.search('user preferences');
 
 // Then add features as needed
-const results = await rb.memories.search({
-  query: 'user preferences',
+const results = await rb.searchWeighted('user preferences', {
   weights: { semantic: 0.7, recency: 0.3 },
   metadata: { user_id: currentUser.id },
   minScore: 0.8
@@ -25,18 +24,16 @@ const results = await rb.memories.search({
 
 ```typescript
 // ❌ Don't manually tune everything
-const results = await rb.memories.search({
-  query: 'api docs',
+const results = await rb.searchWeighted('api docs', {
   weights: { semantic: 0.643, recency: 0.357 }  // Overly precise
 });
 
 // ✅ Let AI suggest optimal weights
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: 'User searching for API documentation'
 });
 
-const results = await rb.memories.search({
-  query: 'api docs',
+const results = await rb.searchWeighted('api docs', {
   weights: prediction.suggestedStrategy.weights  // AI-optimized
 });
 ```
@@ -45,8 +42,7 @@ const results = await rb.memories.search({
 
 ```typescript
 // ✅ Good: Structured, queryable metadata
-await rb.memories.create({
-  content: 'User completed onboarding',
+await rb.createMemory('User completed onboarding', {
   metadata: {
     user_id: 'user_123',
     event: 'onboarding_complete',
@@ -57,8 +53,7 @@ await rb.memories.create({
 });
 
 // ❌ Bad: Unstructured, hard to query
-await rb.memories.create({
-  content: 'User completed onboarding on web at 2025-01-15...',
+await rb.createMemory('User completed onboarding on web at 2025-01-15...', {
   metadata: { info: 'various data mixed together' }
 });
 ```
@@ -84,8 +79,7 @@ await rb.memories.create({
 ```typescript
 // ✅ Good
 try {
-  const memory = await rb.memories.create({
-    content: sanitizeContent(userInput),
+  const memory = await rb.createMemory(sanitizeContent(userInput), {
     metadata: {
       category: 'user_feedback',
       sentiment: 'positive',
@@ -98,7 +92,7 @@ try {
 }
 
 // ❌ Bad
-const memory = await rb.memories.create({
+const memory = await rb.createMemory(
   content: userInput,  // No sanitization
   metadata: { stuff: 'things' }  // Vague
 });  // No error handling
@@ -117,13 +111,11 @@ const memory = await rb.memories.create({
 
 ```typescript
 // ✅ Good: Context-appropriate weights
-const docsResults = await rb.memories.search({
-  query: 'API authentication',
+const docsResults = await rb.searchWeighted('API authentication', {
   weights: { semantic: 0.9, recency: 0.1 }  // Comprehensive docs
 });
 
-const activityResults = await rb.memories.search({
-  query: 'recent user actions',
+const activityResults = await rb.searchWeighted('recent user actions', {
   weights: { semantic: 0.2, recency: 0.8 }  // Recent matters
 });
 ```
@@ -135,16 +127,17 @@ const activityResults = await rb.memories.search({
 ### 1. Batch Operations
 
 ```typescript
-// ✅ Good: Batch create
-const memories = await rb.memories.createBatch([
+// ✅ Good: Batch create (via REST API)
+// POST /v1/memories/batch
+const memories = [
   { content: 'Memory 1', metadata: { type: 'A' } },
   { content: 'Memory 2', metadata: { type: 'B' } },
   { content: 'Memory 3', metadata: { type: 'C' } }
-]);
+];
 
 // ❌ Bad: Individual creates
 for (const item of items) {
-  await rb.memories.create({ content: item.content });  // Slow!
+  await rb.createMemory(item.content);  // Slow!
 }
 ```
 
@@ -152,18 +145,20 @@ for (const item of items) {
 
 ```typescript
 // ✅ Good: Paginate large result sets
-const { data, pagination } = await rb.memories.list({
-  page: 1,
-  limit: 20
+const results = await rb.search(query, {
+  limit: 20,
+  offset: 0
 });
 
 // Process page 1
-if (pagination.hasNext) {
-  // Fetch page 2 if needed
-}
+// Fetch next page if needed
+const nextResults = await rb.search(query, {
+  limit: 20,
+  offset: 20
+});
 
 // ❌ Bad: Fetch everything at once
-const allMemories = await rb.memories.list({ limit: 10000 });  // Slow!
+const allResults = await rb.search(query, { limit: 10000 });  // Slow!
 ```
 
 ### 3. Implement Caching
@@ -177,7 +172,9 @@ async function getMemory(id: string) {
     return cache.get(id);
   }
 
-  const memory = await rb.memories.get(id);
+  // Note: Direct memory retrieval requires REST API
+  // GET /v1/memories/{id}
+  const memory = await fetch(`/v1/memories/${id}`);
   cache.set(id, memory);
   return memory;
 }
@@ -205,7 +202,7 @@ const rb = new RecallBricks('rb_live_abc123...');  // Never!
 const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
 
 app.post('/api/search', async (req, res) => {
-  const results = await rb.memories.search({ query: req.body.query });
+  const results = await rb.search(req.body.query);
   res.json(results);
 });
 
@@ -219,10 +216,10 @@ const rb = new RecallBricks(window.RECALLBRICKS_KEY);  // Exposed!
 ```typescript
 // ✅ Good: Sanitize user input
 const sanitizedContent = sanitize(userInput);
-await rb.memories.create({ content: sanitizedContent });
+await rb.createMemory(sanitizedContent);
 
 // ❌ Bad: Direct user input
-await rb.memories.create({ content: userInput });  // Unsafe
+await rb.createMemory(userInput);  // Unsafe
 ```
 
 ---
@@ -234,11 +231,11 @@ await rb.memories.create({ content: userInput });  // Unsafe
 ```typescript
 // ✅ Good: Fallback behavior
 try {
-  const prediction = await rb.metacognition.predict({ context });
-  return prediction.suggestedMemories;
+  const prediction = await rb.predictMemories({ context });
+  return prediction.memories;
 } catch (error) {
   // Fallback to traditional search
-  return await rb.memories.search({ query: fallbackQuery });
+  return await rb.search(fallbackQuery);
 }
 ```
 
@@ -266,7 +263,8 @@ async function retryOperation(fn: Function, maxRetries = 3) {
 ```typescript
 // ✅ Good: Handle specific errors
 try {
-  const memory = await rb.memories.get(id);
+  // Note: Direct memory retrieval requires REST API
+  const memory = await fetch(`/v1/memories/${id}`);
 } catch (error: any) {
   if (error.code === 'MEMORY_NOT_FOUND') {
     return null;  // Expected case

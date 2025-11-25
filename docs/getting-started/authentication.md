@@ -41,7 +41,7 @@ Visit [recallbricks.com/dashboard](https://recallbricks.com/dashboard) and creat
 import { RecallBricks } from 'recallbricks';
 
 // Reads from RECALLBRICKS_API_KEY environment variable
-const rb = new RecallBricks();
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 ```
 
 Set the environment variable:
@@ -55,7 +55,7 @@ export RECALLBRICKS_API_KEY='rb_live_1234567890abcdef'
 ```typescript
 import { RecallBricks } from 'recallbricks';
 
-const rb = new RecallBricks('rb_live_1234567890abcdef');
+const rb = new RecallBricks({ apiKey: 'rb_live_1234567890abcdef' });
 ```
 
 #### Option 3: Configuration Object
@@ -75,10 +75,11 @@ const rb = new RecallBricks({
 #### Option 1: Environment Variable (Recommended)
 
 ```python
+import os
 from recallbricks import RecallBricks
 
 # Reads from RECALLBRICKS_API_KEY environment variable
-rb = RecallBricks()
+rb = RecallBricks(api_key=os.getenv('RECALLBRICKS_API_KEY'))
 ```
 
 Set the environment variable:
@@ -92,7 +93,7 @@ export RECALLBRICKS_API_KEY='rb_live_1234567890abcdef'
 ```python
 from recallbricks import RecallBricks
 
-rb = RecallBricks('rb_live_1234567890abcdef')
+rb = RecallBricks(api_key='rb_live_1234567890abcdef')
 ```
 
 #### Option 3: Configuration Object
@@ -133,7 +134,7 @@ Examples:
 
 ```typescript
 // ✅ Good
-const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 ```
 
 2. **Use .env files (never commit them)**
@@ -176,14 +177,14 @@ In the dashboard, restrict keys to specific operations:
 
 ```typescript
 // ❌ Bad - Never do this!
-const rb = new RecallBricks('rb_live_1234567890abcdef');
+const rb = new RecallBricks({ apiKey: 'rb_live_1234567890abcdef' });
 ```
 
 2. **Expose keys in frontend code**
 
 ```typescript
 // ❌ Bad - Keys should NEVER be in browser/client code
-const rb = new RecallBricks(process.env.NEXT_PUBLIC_RECALLBRICKS_KEY);
+const rb = new RecallBricks({ apiKey: process.env.NEXT_PUBLIC_RECALLBRICKS_KEY });
 ```
 
 RecallBricks keys should **only** be used in backend/server code.
@@ -207,12 +208,12 @@ Use secure key management systems for team sharing.
 ```typescript
 import { RecallBricks } from 'recallbricks';
 
-const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 
 try {
-  // Test with a simple health check
-  const health = await rb.health();
-  console.log('✓ Authentication successful:', health.status);
+  // Test with a simple memory operation
+  const memory = await rb.createMemory('Test authentication', { tags: ['test'] });
+  console.log('✓ Authentication successful:', memory.id);
 } catch (error) {
   console.error('✗ Authentication failed:', error.message);
 }
@@ -221,14 +222,15 @@ try {
 #### Python
 
 ```python
+import os
 from recallbricks import RecallBricks
 
-rb = RecallBricks()
+rb = RecallBricks(api_key=os.getenv('RECALLBRICKS_API_KEY'))
 
 try:
-    # Test with a simple health check
-    health = rb.health()
-    print(f'✓ Authentication successful: {health.status}')
+    # Test with a simple memory operation
+    memory = rb.save('Test authentication', tags=['test'])
+    print(f'✓ Authentication successful: {memory["id"]}')
 except Exception as e:
     print(f'✗ Authentication failed: {e}')
 ```
@@ -236,7 +238,7 @@ except Exception as e:
 ### Expected Response
 
 ```
-✓ Authentication successful: healthy
+✓ Authentication successful: mem_abc123xyz789
 ```
 
 ---
@@ -286,12 +288,10 @@ except Exception as e:
 ```typescript
 import { RecallBricks, RecallBricksError } from 'recallbricks';
 
-const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 
 try {
-  const memory = await rb.memories.create({
-    content: 'Test memory'
-  });
+  const memory = await rb.createMemory('Test memory');
 } catch (error) {
   if (error instanceof RecallBricksError) {
     if (error.code === 'INVALID_API_KEY') {
@@ -307,12 +307,13 @@ try {
 #### Python
 
 ```python
+import os
 from recallbricks import RecallBricks, RecallBricksError
 
-rb = RecallBricks()
+rb = RecallBricks(api_key=os.getenv('RECALLBRICKS_API_KEY'))
 
 try:
-    memory = rb.memories.create(content='Test memory')
+    memory = rb.save('Test memory')
 except RecallBricksError as e:
     if e.code == 'INVALID_API_KEY':
         print('Check your API key configuration')

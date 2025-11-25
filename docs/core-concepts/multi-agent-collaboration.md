@@ -82,8 +82,7 @@ Agents create memories tagged with their identity:
 
 ```typescript
 // Researcher agent creates a memory
-await rb.memories.create({
-  content: 'Latest market trend: AI coding assistants up 300% in 2024',
+await rb.createMemory('Latest market trend: AI coding assistants up 300% in 2024', {
   metadata: {
     agentId: 'researcher',
     source: 'market_research',
@@ -92,8 +91,7 @@ await rb.memories.create({
 });
 
 // Analyst agent creates a memory
-await rb.memories.create({
-  content: 'Pattern detected: Developer productivity increased with AI tools',
+await rb.createMemory('Pattern detected: Developer productivity increased with AI tools', {
   metadata: {
     agentId: 'analyst',
     source: 'data_analysis',
@@ -248,8 +246,7 @@ const webAgent = await rb.collaboration.registerAgent({
   role: 'web_research'
 });
 
-await rb.memories.create({
-  content: 'Study shows 73% of developers use AI coding tools',
+await rb.createMemory('Study shows 73% of developers use AI coding tools', {
   metadata: { agentId: 'web-researcher', source: 'academic_paper' }
 });
 
@@ -259,8 +256,7 @@ const dataAgent = await rb.collaboration.registerAgent({
   role: 'data_analysis'
 });
 
-await rb.memories.create({
-  content: 'Our internal survey: 68% of devs use AI tools daily',
+await rb.createMemory('Our internal survey: 68% of devs use AI tools daily', {
   metadata: { agentId: 'data-analyst', source: 'internal_data' }
 });
 
@@ -270,8 +266,7 @@ const marketAgent = await rb.collaboration.registerAgent({
   role: 'market_research'
 });
 
-await rb.memories.create({
-  content: 'Market size for AI dev tools: $4.2B in 2024',
+await rb.createMemory('Market size for AI dev tools: $4.2B in 2024', {
   metadata: { agentId: 'market-researcher', source: 'market_report' }
 });
 
@@ -295,8 +290,7 @@ Multiple support agents handling different specialties:
 
 ```typescript
 // Technical support agent (high reputation)
-await rb.memories.create({
-  content: 'Fix for API timeout: Increase connection pool size to 50',
+await rb.createMemory('Fix for API timeout: Increase connection pool size to 50', {
   metadata: {
     agentId: 'tech-support-1',
     category: 'technical',
@@ -305,8 +299,7 @@ await rb.memories.create({
 });
 
 // Billing support agent (medium reputation)
-await rb.memories.create({
-  content: 'Common billing issue: Check if payment method is expired',
+await rb.createMemory('Common billing issue: Check if payment method is expired', {
   metadata: {
     agentId: 'billing-support-1',
     category: 'billing',
@@ -315,8 +308,7 @@ await rb.memories.create({
 });
 
 // New agent (low reputation)
-await rb.memories.create({
-  content: 'Try restarting the app', // Generic, low-value advice
+await rb.createMemory('Try restarting the app', { // Generic, low-value advice
   metadata: {
     agentId: 'new-agent-1',
     category: 'general',
@@ -558,8 +550,7 @@ const synthesis = await rb.collaboration.synthesize({
 
 ```typescript
 // ✅ Agents should assign realistic confidence
-await rb.memories.create({
-  content: '...',
+await rb.createMemory('...', {
   metadata: {
     agentId: 'researcher',
     confidence: 0.85  // Honest confidence assessment

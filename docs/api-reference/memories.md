@@ -11,7 +11,7 @@ Store a new memory with automatic embedding generation.
 ### Endpoint
 
 ```http
-POST /v1/memories
+POST /api/v1/memories
 ```
 
 ### Parameters
@@ -26,35 +26,29 @@ POST /v1/memories
 
 **TypeScript:**
 ```typescript
-const memory = await rb.memories.create({
-  content: 'User prefers concise documentation with code examples',
-  metadata: {
-    category: 'user_preferences',
-    importance: 'high',
-    user_id: 'user_123'
+const memory = await rb.createMemory(
+  'User prefers concise documentation with code examples',
+  {
+    tags: ['user_preferences', 'high_importance', 'user_123']
   }
-});
+);
 
 console.log(memory.id); // mem_abc123
 ```
 
 **Python:**
 ```python
-memory = rb.memories.create(
-    content='User prefers concise documentation with code examples',
-    metadata={
-        'category': 'user_preferences',
-        'importance': 'high',
-        'user_id': 'user_123'
-    }
+memory = rb.save(
+    'User prefers concise documentation with code examples',
+    tags=['user_preferences', 'high_importance', 'user_123']
 )
 
-print(memory.id)  # mem_abc123
+print(memory['id'])  # mem_abc123
 ```
 
 **cURL:**
 ```bash
-curl -X POST https://recallbricks-api-clean.onrender.com/v1/memories \
+curl -X POST https://recallbricks-api-clean.onrender.com/api/v1/memories \
   -H "Authorization: Bearer rb_live_abc123" \
   -H "Content-Type: application/json" \
   -d '{
@@ -101,7 +95,7 @@ Retrieve a specific memory by ID.
 ### Endpoint
 
 ```http
-GET /v1/memories/:id
+GET /api/v1/memories/:id
 ```
 
 ### Parameters
@@ -126,7 +120,7 @@ print(memory.content)
 
 **cURL:**
 ```bash
-curl https://recallbricks-api-clean.onrender.com/v1/memories/mem_abc123 \
+curl https://recallbricks-api-clean.onrender.com/api/v1/memories/mem_abc123 \
   -H "Authorization: Bearer rb_live_abc123"
 ```
 
@@ -161,7 +155,7 @@ Semantic search with customizable weighting.
 ### Endpoint
 
 ```http
-POST /v1/memories/search
+GET /api/v1/memories/search
 ```
 
 ### Parameters
@@ -178,46 +172,30 @@ POST /v1/memories/search
 
 **TypeScript:**
 ```typescript
-const results = await rb.memories.search({
-  query: 'user preferences',
+const results = await rb.search('user preferences', {
   limit: 5,
-  weights: {
-    semantic: 0.7,
-    recency: 0.3
-  },
-  metadata: {
-    category: 'user_preferences'
-  },
+  tags: ['user_preferences'],
   minScore: 0.8
 });
 
-results.forEach(r => console.log(r.content, r.score));
+results.forEach(r => console.log(r.text, r.score));
 ```
 
 **Python:**
 ```python
-results = rb.memories.search(
-    query='user preferences',
-    limit=5,
-    weights={'semantic': 0.7, 'recency': 0.3},
-    metadata={'category': 'user_preferences'},
-    min_score=0.8
+results = rb.search(
+    'user preferences',
+    limit=5
 )
 
 for result in results:
-    print(result.content, result.score)
+    print(result['text'], result['score'])
 ```
 
 **cURL:**
 ```bash
-curl -X POST https://recallbricks-api-clean.onrender.com/v1/memories/search \
-  -H "Authorization: Bearer rb_live_abc123" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "user preferences",
-    "limit": 5,
-    "weights": { "semantic": 0.7, "recency": 0.3 }
-  }'
+curl "https://recallbricks-api-clean.onrender.com/api/v1/memories/search?query=user+preferences&limit=5" \
+  -H "Authorization: Bearer rb_live_abc123"
 ```
 
 ### Response
@@ -255,7 +233,7 @@ Modify an existing memory.
 ### Endpoint
 
 ```http
-PATCH /v1/memories/:id
+PATCH /api/v1/memories/:id
 ```
 
 ### Parameters
@@ -313,7 +291,7 @@ Permanently delete a memory.
 ### Endpoint
 
 ```http
-DELETE /v1/memories/:id
+DELETE /api/v1/memories/:id
 ```
 
 ### Request Example
@@ -330,7 +308,7 @@ rb.memories.delete('mem_abc123')
 
 **cURL:**
 ```bash
-curl -X DELETE https://recallbricks-api-clean.onrender.com/v1/memories/mem_abc123 \
+curl -X DELETE https://recallbricks-api-clean.onrender.com/api/v1/memories/mem_abc123 \
   -H "Authorization: Bearer rb_live_abc123"
 ```
 
@@ -352,7 +330,7 @@ Create multiple memories in one request.
 ### Endpoint
 
 ```http
-POST /v1/memories/batch
+POST /api/v1/memories/batch
 ```
 
 ### Request Example
@@ -401,7 +379,7 @@ Get all memories with pagination.
 ### Endpoint
 
 ```http
-GET /v1/memories
+GET /api/v1/memories
 ```
 
 ### Parameters
@@ -435,48 +413,41 @@ print(result['pagination']['total'])
 
 ## Best Practices
 
-### 1. Use Metadata Effectively
+### 1. Use Tags Effectively
 
 ```typescript
-// ✅ Good: Structured metadata
-await rb.memories.create({
-  content: 'User opened dashboard',
-  metadata: {
-    category: 'user_activity',
-    action: 'page_view',
-    page: 'dashboard',
-    timestamp: new Date().toISOString(),
-    user_id: 'user_123'
+// ✅ Good: Structured tags
+await rb.createMemory(
+  'User opened dashboard at ' + new Date().toISOString(),
+  {
+    tags: ['user_activity', 'page_view', 'dashboard', 'user_123']
   }
+);
+```
+
+### 2. Use Search with Weighted Results
+
+```typescript
+// Use searchWeighted for custom weighting
+const results = await rb.searchWeighted('user activity', {
+  limit: 10
+});
+
+// Standard search
+const simpleResults = await rb.search('technical documentation', {
+  limit: 5
 });
 ```
 
-### 2. Optimize Search Weights
+### 3. Create Multiple Memories
 
 ```typescript
-// Recent info matters more
-const recentResults = await rb.memories.search({
-  query: 'user activity',
-  weights: { semantic: 0.3, recency: 0.7 }
-});
-
-// Semantic similarity matters more
-const comprehensiveResults = await rb.memories.search({
-  query: 'technical documentation',
-  weights: { semantic: 0.9, recency: 0.1 }
-});
-```
-
-### 3. Batch Operations
-
-```typescript
-// ✅ Good: Single batch request
-await rb.memories.createBatch(memories);
-
-// ❌ Bad: Multiple individual requests
-for (const mem of memories) {
-  await rb.memories.create(mem);
+// Create memories one at a time
+for (const text of memoryTexts) {
+  await rb.createMemory(text, { tags: ['batch_import'] });
 }
+
+// Note: For batch operations, use the REST API directly
 ```
 
 ---

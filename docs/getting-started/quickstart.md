@@ -17,26 +17,26 @@ npm install recallbricks
 ```typescript
 import { RecallBricks } from 'recallbricks';
 
-const rb = new RecallBricks('your-api-key-here');
+const rb = new RecallBricks({ apiKey: 'your-api-key-here' });
 
 // Create a memory
-const memory = await rb.memories.create({
-  content: 'User prefers concise technical documentation with working code examples',
-  metadata: { category: 'user_preferences', importance: 'high' }
-});
+const memory = await rb.createMemory(
+  'User prefers concise technical documentation with working code examples',
+  { tags: ['user_preferences', 'high_importance'] }
+);
 
 console.log('✓ Memory created:', memory.id);
 
 // Let RecallBricks predict what you'll need (metacognition!)
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: 'User just asked about API documentation style'
 });
 
-console.log('✓ AI Prediction:', prediction.suggestedMemories[0].content);
+console.log('✓ AI Prediction:', prediction.memories[0].text);
 console.log('✓ Confidence:', prediction.confidence);
 
 // Get usage patterns
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns(7);
 
 console.log('✓ Learning patterns:', patterns.queryPatterns);
 ```
@@ -70,28 +70,28 @@ pip install recallbricks
 ```python
 from recallbricks import RecallBricks
 
-rb = RecallBricks('your-api-key-here')
+rb = RecallBricks(api_key='your-api-key-here')
 
 # Create a memory
-memory = rb.memories.create(
-    content='User prefers concise technical documentation with working code examples',
-    metadata={'category': 'user_preferences', 'importance': 'high'}
+memory = rb.save(
+    'User prefers concise technical documentation with working code examples',
+    tags=['user_preferences', 'high_importance']
 )
 
-print(f'✓ Memory created: {memory.id}')
+print(f'✓ Memory created: {memory["id"]}')
 
 # Let RecallBricks predict what you'll need (metacognition!)
-prediction = rb.metacognition.predict(
+prediction = rb.predict_memories(
     context='User just asked about API documentation style'
 )
 
-print(f'✓ AI Prediction: {prediction.suggested_memories[0].content}')
-print(f'✓ Confidence: {prediction.confidence}')
+print(f'✓ AI Prediction: {prediction["memories"][0]["text"]}')
+print(f'✓ Confidence: {prediction["confidence"]}')
 
 # Get usage patterns
-patterns = rb.metacognition.get_patterns()
+patterns = rb.get_patterns(days=7)
 
-print(f'✓ Learning patterns: {patterns.query_patterns}')
+print(f'✓ Learning patterns: {patterns["query_patterns"]}')
 ```
 
 ### Expected Output

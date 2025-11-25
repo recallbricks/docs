@@ -130,23 +130,24 @@ set RECALLBRICKS_API_KEY=your-api-key-here
 ```typescript
 import { RecallBricks } from 'recallbricks';
 
-// Automatically reads from environment variable
-const rb = new RecallBricks();
+// Pass API key explicitly
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 
-// Or pass explicitly
-const rb = new RecallBricks('your-api-key-here');
+// Or with hardcoded key (not recommended)
+const rb = new RecallBricks({ apiKey: 'your-api-key-here' });
 ```
 
 #### Python
 
 ```python
+import os
 from recallbricks import RecallBricks
 
-# Automatically reads from environment variable
-rb = RecallBricks()
+# Pass API key explicitly
+rb = RecallBricks(api_key=os.getenv('RECALLBRICKS_API_KEY'))
 
-# Or pass explicitly
-rb = RecallBricks('your-api-key-here')
+# Or with hardcoded key (not recommended)
+rb = RecallBricks(api_key='your-api-key-here')
 ```
 
 ---
@@ -173,7 +174,7 @@ Load in your app:
 import 'dotenv/config';
 import { RecallBricks } from 'recallbricks';
 
-const rb = new RecallBricks(); // Reads from .env
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY }); // Reads from .env
 ```
 
 ### Python
@@ -193,11 +194,12 @@ RECALLBRICKS_API_KEY=your-api-key-here
 Load in your app:
 
 ```python
+import os
 from dotenv import load_dotenv
 from recallbricks import RecallBricks
 
 load_dotenv()
-rb = RecallBricks()  # Reads from .env
+rb = RecallBricks(api_key=os.getenv('RECALLBRICKS_API_KEY'))  # Reads from .env
 ```
 
 ---
@@ -210,7 +212,7 @@ rb = RecallBricks()  # Reads from .env
 // lib/recallbricks.ts
 import { RecallBricks } from 'recallbricks';
 
-export const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
+export const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 ```
 
 ```typescript
@@ -218,8 +220,8 @@ export const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
 import { rb } from '@/lib/recallbricks';
 
 export async function POST(req: Request) {
-  const { content, metadata } = await req.json();
-  const memory = await rb.memories.create({ content, metadata });
+  const { content, tags } = await req.json();
+  const memory = await rb.createMemory(content, { tags });
   return Response.json(memory);
 }
 ```
@@ -233,11 +235,11 @@ from recallbricks import RecallBricks
 import os
 
 app = FastAPI()
-rb = RecallBricks(os.getenv('RECALLBRICKS_API_KEY'))
+rb = RecallBricks(api_key=os.getenv('RECALLBRICKS_API_KEY'))
 
 @app.post('/memories')
-async def create_memory(content: str, metadata: dict):
-    memory = rb.memories.create(content=content, metadata=metadata)
+async def create_memory(content: str, tags: list):
+    memory = rb.save(content, tags=tags)
     return memory
 ```
 
@@ -249,11 +251,11 @@ import express from 'express';
 import { RecallBricks } from 'recallbricks';
 
 const app = express();
-const rb = new RecallBricks(process.env.RECALLBRICKS_API_KEY);
+const rb = new RecallBricks({ apiKey: process.env.RECALLBRICKS_API_KEY });
 
 app.post('/memories', async (req, res) => {
-  const { content, metadata } = req.body;
-  const memory = await rb.memories.create({ content, metadata });
+  const { content, tags } = req.body;
+  const memory = await rb.createMemory(content, { tags });
   res.json(memory);
 });
 ```
@@ -268,16 +270,17 @@ RECALLBRICKS_API_KEY = os.getenv('RECALLBRICKS_API_KEY')
 from django.http import JsonResponse
 from recallbricks import RecallBricks
 from django.conf import settings
+import json
 
-rb = RecallBricks(settings.RECALLBRICKS_API_KEY)
+rb = RecallBricks(api_key=settings.RECALLBRICKS_API_KEY)
 
 def create_memory(request):
     data = json.loads(request.body)
-    memory = rb.memories.create(
-        content=data['content'],
-        metadata=data['metadata']
+    memory = rb.save(
+        data['content'],
+        tags=data.get('tags', [])
     )
-    return JsonResponse(memory.dict())
+    return JsonResponse(memory)
 ```
 
 ---

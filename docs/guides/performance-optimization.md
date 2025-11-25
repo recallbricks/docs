@@ -24,8 +24,9 @@ RecallBricks automatically optimizes over time. Expected improvements:
 
 ```typescript
 // ❌ Slow: Individual requests (N+1)
+// Note: Direct memory retrieval requires REST API
 for (const id of memoryIds) {
-  const memory = await rb.memories.get(id);  // 100ms each
+  const memory = await fetch(`/v1/memories/${id}`);  // 100ms each
   results.push(memory);
 }
 // Total: 100ms × 100 = 10,000ms (10 seconds)
@@ -34,15 +35,16 @@ for (const id of memoryIds) {
 ### Solution: Batch Requests
 
 ```typescript
-// ✅ Fast: Single batch request
-const memories = await rb.memories.getBatch(memoryIds);
+// ✅ Fast: Single batch request via REST API
+// GET /v1/memories/batch?ids=id1,id2,id3
+const memories = await fetch(`/v1/memories/batch?ids=${memoryIds.join(',')}`);
 // Total: ~200ms (50x faster)
 ```
 
 **Applies to:**
-- `memories.createBatch()` - Create multiple memories
-- `memories.getBatch()` - Retrieve multiple memories
-- `memories.deleteBatch()` - Delete multiple memories
+- `POST /v1/memories/batch` - Create multiple memories
+- `GET /v1/memories/batch` - Retrieve multiple memories
+- `DELETE /v1/memories/batch` - Delete multiple memories
 
 ---
 
@@ -62,7 +64,8 @@ class RecallBricksCache {
       return cached.data;  // Return cached
     }
 
-    const data = await rb.memories.get(id);
+    // Note: Direct memory retrieval requires REST API
+    const data = await fetch(`/v1/memories/${id}`);
     this.cache.set(id, { data, timestamp: Date.now() });
     return data;
   }
@@ -92,8 +95,8 @@ async function getCachedMemory(id: string) {
   const cached = await redis.get(`memory:${id}`);
   if (cached) return JSON.parse(cached);
 
-  // Fetch from RecallBricks
-  const memory = await rb.memories.get(id);
+  // Fetch from RecallBricks via REST API
+  const memory = await fetch(`/v1/memories/${id}`);
 
   // Cache for 5 minutes
   await redis.setex(`memory:${id}`, 300, JSON.stringify(memory));
@@ -110,21 +113,21 @@ async function getCachedMemory(id: string) {
 
 ```typescript
 // ❌ Slow: Load everything
-const allMemories = await rb.memories.list({ limit: 10000 });  // 2-3 seconds
+const allResults = await rb.search(query, { limit: 10000 });  // 2-3 seconds
 ```
 
 ### Solution: Paginate
 
 ```typescript
 // ✅ Fast: Load page by page
-const { data, pagination } = await rb.memories.list({
-  page: 1,
-  limit: 20  // Only 20 at a time
+const results = await rb.search(query, {
+  limit: 20,  // Only 20 at a time
+  offset: 0
 });  // 150ms
 
 // Load more only when needed
-if (userScrollsToBottom && pagination.hasNext) {
-  const nextPage = await rb.memories.list({ page: 2, limit: 20 });
+if (userScrollsToBottom) {
+  const nextResults = await rb.search(query, { limit: 20, offset: 20 });
 }
 ```
 
@@ -141,13 +144,11 @@ if (userScrollsToBottom && pagination.hasNext) {
 
 ```typescript
 // ❌ Slow: Search everything
-const results = await rb.memories.search({
-  query: 'user preferences'
-});  // Searches all memories
+const results = await rb.search('user preferences');
+// Searches all memories
 
 // ✅ Fast: Filter by metadata
-const results = await rb.memories.search({
-  query: 'preferences',
+const results = await rb.search('preferences', {
   metadata: {
     user_id: currentUser.id,  // Reduces search space
     category: 'preferences'
@@ -159,14 +160,12 @@ const results = await rb.memories.search({
 
 ```typescript
 // ❌ Wasteful: Request more than needed
-const results = await rb.memories.search({
-  query: 'docs',
+const results = await rb.search('docs', {
   limit: 100  // Only show top 5
 });
 
 // ✅ Efficient: Request only what you need
-const results = await rb.memories.search({
-  query: 'docs',
+const results = await rb.search('docs', {
   limit: 5  // Show top 5
 });
 ```
@@ -209,18 +208,15 @@ rb = RecallBricks(
 ### Run Independent Operations in Parallel
 
 ```typescript
-// ❌ Slow: Sequential
-const memory1 = await rb.memories.get('mem_1');  // 100ms
-const memory2 = await rb.memories.get('mem_2');  // 100ms
-const memory3 = await rb.memories.get('mem_3');  // 100ms
+// ❌ Slow: Sequential (requires REST API)
+const memory1 = await fetch('/v1/memories/mem_1');  // 100ms
+const memory2 = await fetch('/v1/memories/mem_2');  // 100ms
+const memory3 = await fetch('/v1/memories/mem_3');  // 100ms
 // Total: 300ms
 
-// ✅ Fast: Parallel
-const [memory1, memory2, memory3] = await Promise.all([
-  rb.memories.get('mem_1'),
-  rb.memories.get('mem_2'),
-  rb.memories.get('mem_3')
-]);
+// ✅ Fast: Batch request
+// GET /v1/memories/batch?ids=mem_1,mem_2,mem_3
+const memories = await fetch('/v1/memories/batch?ids=mem_1,mem_2,mem_3');
 // Total: 100ms (3x faster)
 ```
 
@@ -230,7 +226,7 @@ const [memory1, memory2, memory3] = await Promise.all([
 // ❌ Slow: Block user request
 app.post('/api/action', async (req, res) => {
   const result = await doSomething();
-  await rb.memories.create({ content: 'Action completed' });  // Blocks response
+  await rb.createMemory('Action completed');  // Blocks response
   res.json(result);
 });
 
@@ -241,7 +237,7 @@ app.post('/api/action', async (req, res) => {
 
   // Store memory in background
   setImmediate(async () => {
-    await rb.memories.create({ content: 'Action completed' });
+    await rb.createMemory('Action completed');
   });
 });
 ```
@@ -254,8 +250,7 @@ app.post('/api/action', async (req, res) => {
 
 ```typescript
 // ❌ Slow: Large metadata
-await rb.memories.create({
-  content: 'User action',
+await rb.createMemory('User action', {
   metadata: {
     full_user_object: {...},  // 50KB of data
     entire_session: {...}     // 100KB of data
@@ -263,8 +258,7 @@ await rb.memories.create({
 });
 
 // ✅ Fast: Minimal metadata
-await rb.memories.create({
-  content: 'User action',
+await rb.createMemory('User action', {
   metadata: {
     user_id: 'user_123',  // Reference, not full object
     session_id: 'session_456'
@@ -276,8 +270,7 @@ await rb.memories.create({
 
 ```typescript
 // ✅ Good: Consistent metadata keys for indexing
-await rb.memories.create({
-  content: '...',
+await rb.createMemory('...', {
   metadata: {
     category: 'events',  // Indexed
     user_id: 'user_123',  // Indexed
@@ -294,18 +287,17 @@ await rb.memories.create({
 
 ```typescript
 // ❌ Manual: You decide everything
-const results = await rb.memories.search({
-  query: constructComplexQuery(userInput),
+const results = await rb.search(constructComplexQuery(userInput), {
   weights: calculateOptimalWeights(context),
-  filters: buildFilters(metadata)
+  metadata: buildFilters(metadata)
 });  // Lots of CPU work
 
 // ✅ AI-Powered: Let RecallBricks decide
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: userInput
 });  // RecallBricks optimizes
 
-return prediction.suggestedMemories;  // Pre-ranked, pre-filtered
+return prediction.memories;  // Pre-ranked, pre-filtered
 ```
 
 **Benefits:**

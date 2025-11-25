@@ -36,8 +36,7 @@ RecallBricks tracks every operation:
 
 ```typescript
 // You create a memory
-await rb.memories.create({
-  content: 'User prefers dark mode',
+await rb.createMemory('User prefers dark mode', {
   metadata: { category: 'preferences', user_id: 'user_123' }
 });
 
@@ -50,8 +49,7 @@ await rb.memories.create({
 
 ```typescript
 // You search for memories
-await rb.memories.search({
-  query: 'user preferences',
+await rb.search('user preferences', {
   limit: 5
 });
 
@@ -72,7 +70,7 @@ After collecting observations, RecallBricks analyzes:
 - **Weighting Effectiveness:** Do recency or semantic weights produce better results?
 
 ```typescript
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns();
 
 console.log(patterns.queryPatterns);
 // {
@@ -93,12 +91,12 @@ Frequently accessed memories are cached:
 
 ```typescript
 // First query: 245ms (not cached)
-await rb.memories.get('mem_123');
+// Note: Direct memory retrieval by ID requires REST API
+// GET /v1/memories/mem_123
 
 // RecallBricks observes this memory is accessed often
 
 // Subsequent queries: 12ms (cached)
-await rb.memories.get('mem_123');
 ```
 
 #### B. Optimizes Weighting
@@ -114,7 +112,7 @@ The system learns which weights work best:
 { recency: 0.8, semantic: 0.2 }
 
 // This is reflected in getPatterns()
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns();
 console.log(patterns.queryPatterns.optimalWeights);
 // { recency: 0.8, semantic: 0.2 }
 ```
@@ -141,8 +139,7 @@ You're building a chatbot that helps users with technical issues.
 
 ```typescript
 // User: "How do I reset my password?"
-const results = await rb.memories.search({
-  query: 'reset password',
+const results = await rb.search('reset password', {
   limit: 5
 });
 
@@ -155,7 +152,7 @@ const results = await rb.memories.search({
 #### Day 7: Pattern Emerges
 
 ```typescript
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns();
 
 console.log(patterns);
 // {
@@ -176,8 +173,7 @@ RecallBricks learned:
 
 ```typescript
 // Same query, but now:
-const results = await rb.memories.search({
-  query: 'reset password',
+const results = await rb.search('reset password', {
   limit: 5
 });
 
@@ -223,7 +219,7 @@ RecallBricks learns which weighting strategy works best.
 RecallBricks identifies which metadata fields are important.
 
 ```typescript
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns();
 
 console.log(patterns.creationPatterns.topMetadataKeys);
 // ['category', 'importance', 'user_id']
@@ -243,7 +239,8 @@ RecallBricks automatically caches:
 
 ```typescript
 // Cache statistics
-const metrics = await rb.metacognition.getMetrics();
+// Note: getMetrics() is available via REST API
+// GET /v1/metacognition/metrics
 
 console.log(metrics.performanceMetrics);
 // {
@@ -260,7 +257,7 @@ console.log(metrics.performanceMetrics);
 ### Get Current Patterns
 
 ```typescript
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns();
 
 console.log(patterns);
 ```
@@ -294,7 +291,8 @@ console.log(patterns);
 ### Get Optimization Metrics
 
 ```typescript
-const metrics = await rb.metacognition.getMetrics();
+// Note: getMetrics() is available via REST API
+// GET /v1/metacognition/metrics
 
 console.log(metrics.optimizationGains);
 ```
@@ -412,7 +410,7 @@ Give RecallBricks time to observe patterns:
 // Check patterns after 7-14 days
 
 // ❌ Bad: Check patterns immediately
-// await rb.metacognition.getPatterns(); // Day 1 - not enough data
+// await rb.getPatterns(); // Day 1 - not enough data
 ```
 
 ### 2. Monitor Progress
@@ -421,7 +419,8 @@ Track optimization over time:
 
 ```typescript
 // Weekly check
-const metrics = await rb.metacognition.getMetrics();
+// Note: getMetrics() is available via REST API
+// GET /v1/metacognition/metrics
 
 console.log(metrics.learningProgress.confidenceLevel);
 // Week 1: 0.45
@@ -435,14 +434,12 @@ Help the system learn by using consistent metadata:
 
 ```typescript
 // ✅ Good: Consistent metadata keys
-await rb.memories.create({
-  content: '...',
+await rb.createMemory('...', {
   metadata: { category: 'preferences', importance: 'high' }
 });
 
 // ❌ Bad: Inconsistent keys
-await rb.memories.create({
-  content: '...',
+await rb.createMemory('...', {
   metadata: { type: 'preferences', priority: 'high' }
 });
 ```
@@ -453,12 +450,11 @@ Use the learned optimal weights:
 
 ```typescript
 // Get learned weights
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns();
 const optimalWeights = patterns.queryPatterns.optimalWeights;
 
 // Apply them in searches
-await rb.memories.search({
-  query: 'user preferences',
+await rb.searchWeighted('user preferences', {
   weights: optimalWeights  // Use learned weights
 });
 ```

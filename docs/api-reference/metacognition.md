@@ -11,7 +11,7 @@ Get AI predictions for which memories to retrieve.
 ### Endpoint
 
 ```http
-POST /v1/metacognition/predict
+GET /api/v1/memories/predict
 ```
 
 ### Parameters
@@ -27,37 +27,30 @@ POST /v1/metacognition/predict
 
 **TypeScript:**
 ```typescript
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: 'User asking about API authentication methods',
   limit: 3,
   minConfidence: 0.8
 });
 
-console.log(prediction.suggestedMemories);
+console.log(prediction.memories);
 console.log(prediction.confidence);
 ```
 
 **Python:**
 ```python
-prediction = rb.metacognition.predict(
-    context='User asking about API authentication methods',
-    limit=3,
-    min_confidence=0.8
+prediction = rb.predict_memories(
+    context='User asking about API authentication methods'
 )
 
-print(prediction.suggested_memories)
-print(prediction.confidence)
+print(prediction['memories'])
+print(prediction['confidence'])
 ```
 
 **cURL:**
 ```bash
-curl -X POST https://recallbricks-api-clean.onrender.com/v1/metacognition/predict \
-  -H "Authorization: Bearer rb_live_abc123" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "context": "User asking about API authentication",
-    "limit": 3
-  }'
+curl "https://recallbricks-api-clean.onrender.com/api/v1/memories/predict?context=User+asking+about+API+authentication&limit=3" \
+  -H "Authorization: Bearer rb_live_abc123"
 ```
 
 ### Response
@@ -105,7 +98,7 @@ Retrieve learned usage patterns.
 ### Endpoint
 
 ```http
-GET /v1/metacognition/patterns
+GET /api/v1/memories/meta/patterns
 ```
 
 ### Parameters
@@ -119,9 +112,7 @@ GET /v1/metacognition/patterns
 
 **TypeScript:**
 ```typescript
-const patterns = await rb.metacognition.getPatterns({
-  timeRange: '30d'
-});
+const patterns = await rb.getPatterns(30);
 
 console.log(patterns.queryPatterns);
 console.log(patterns.creationPatterns);
@@ -129,10 +120,10 @@ console.log(patterns.creationPatterns);
 
 **Python:**
 ```python
-patterns = rb.metacognition.get_patterns(time_range='30d')
+patterns = rb.get_patterns(days=30)
 
-print(patterns.query_patterns)
-print(patterns.creation_patterns)
+print(patterns['query_patterns'])
+print(patterns['creation_patterns'])
 ```
 
 ### Response
@@ -174,7 +165,7 @@ Retrieve metacognitive learning metrics.
 ### Endpoint
 
 ```http
-GET /v1/metacognition/metrics
+GET /api/v1/memories/meta/metrics
 ```
 
 ### Request Example
@@ -230,7 +221,7 @@ Give explicit feedback on predictions (helps learning).
 ### Endpoint
 
 ```http
-POST /v1/metacognition/feedback
+POST /api/v1/memories/:id/feedback
 ```
 
 ### Parameters
@@ -279,7 +270,7 @@ Get real-time suggestions for search strategies.
 ### Endpoint
 
 ```http
-POST /v1/metacognition/suggest
+POST /api/v1/memories/suggest
 ```
 
 ### Parameters
@@ -293,8 +284,7 @@ POST /v1/metacognition/suggest
 
 **TypeScript:**
 ```typescript
-const suggestions = await rb.metacognition.suggest({
-  query: 'user preferences',
+const suggestions = await rb.suggestMemories('user preferences', {
   context: {
     sessionStart: true,
     userTier: 'premium'
@@ -307,9 +297,8 @@ console.log(suggestions.recommendedFilters);
 
 **Python:**
 ```python
-suggestions = rb.metacognition.suggest(
-    query='user preferences',
-    context={'session_start': True, 'user_tier': 'premium'}
+suggestions = rb.suggest_memories(
+    context='user preferences'
 )
 ```
 
@@ -345,12 +334,12 @@ suggestions = rb.metacognition.suggest(
 const userMessage = "What documentation style do I like?";
 
 // Get prediction
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: `User message: "${userMessage}". Session turn: 3`
 });
 
 // Use high-confidence suggestions
-const memories = prediction.suggestedMemories
+const memories = prediction.memories
   .filter(m => m.confidence > 0.85);
 
 // Build response from predicted memories
@@ -361,13 +350,12 @@ const response = buildChatResponse(memories);
 
 ```typescript
 // Get learned optimal weights
-const patterns = await rb.metacognition.getPatterns();
+const patterns = await rb.getPatterns(7);
 const optimalWeights = patterns.queryPatterns.optimalWeights;
 
 // Use in search
-const results = await rb.memories.search({
-  query: 'user preferences',
-  weights: optimalWeights  // Learned weights
+const results = await rb.search('user preferences', {
+  limit: 10
 });
 ```
 
@@ -394,7 +382,7 @@ if (metrics.optimizationGains.speedImprovement.includes('30%')) {
 
 ```typescript
 // ✅ Good: Detailed context
-await rb.metacognition.predict({
+await rb.predictMemories({
   context: `
     User message: "How do I authenticate?"
     Session: New (first message)
@@ -404,7 +392,7 @@ await rb.metacognition.predict({
 });
 
 // ❌ Bad: Minimal context
-await rb.metacognition.predict({
+await rb.predictMemories({
   context: 'auth'
 });
 ```
@@ -412,13 +400,13 @@ await rb.metacognition.predict({
 ### 2. Filter by Confidence
 
 ```typescript
-const prediction = await rb.metacognition.predict({ context: '...' });
+const prediction = await rb.predictMemories({ context: '...' });
 
 // Use only high-confidence predictions
-const reliable = prediction.suggestedMemories.filter(m => m.confidence > 0.85);
+const reliable = prediction.memories.filter(m => m.confidence > 0.85);
 
 // Medium confidence as fallback
-const fallback = prediction.suggestedMemories.filter(
+const fallback = prediction.memories.filter(
   m => m.confidence >= 0.7 && m.confidence < 0.85
 );
 ```

@@ -50,14 +50,14 @@ const relevant = results.filter(r => r.score > 0.8);
 
 ```typescript
 // 1. You provide context
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: 'User asked: "What documentation style do I prefer?"'
 });
 
 // 2. RecallBricks predicts everything
 console.log(prediction);
 // {
-//   suggestedMemories: [
+//   memories: [
 //     { id: 'mem_123', content: '...', confidence: 0.94 }
 //   ],
 //   suggestedStrategy: {
@@ -68,7 +68,7 @@ console.log(prediction);
 // }
 
 // 3. Use the suggestions (or just the high-confidence ones)
-const memories = prediction.suggestedMemories.filter(m => m.confidence > 0.8);
+const memories = prediction.memories.filter(m => m.confidence > 0.8);
 ```
 
 **You made 1 decision. RecallBricks made the rest.**
@@ -80,7 +80,7 @@ const memories = prediction.suggestedMemories.filter(m => m.confidence > 0.8);
 ### Basic Prediction
 
 ```typescript
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: 'User asking about API documentation preferences'
 });
 ```
@@ -88,7 +88,7 @@ const prediction = await rb.metacognition.predict({
 **Returns:**
 ```json
 {
-  "suggestedMemories": [
+  "memories": [
     {
       "id": "mem_abc123",
       "content": "User prefers concise docs with code examples",
@@ -120,7 +120,7 @@ const prediction = await rb.metacognition.predict({
 ### Advanced Options
 
 ```typescript
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: 'User asked about Python examples',
   limit: 3,  // Limit suggestions
   minConfidence: 0.85,  // Only high-confidence suggestions
@@ -206,7 +206,7 @@ const history = await db.search({
 });
 
 // Predictive approach: Let AI decide
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: `User: "${userMessage}". Session start. User ID: ${currentUser.id}`
 });
 
@@ -216,7 +216,7 @@ const prediction = await rb.metacognition.predict({
 // - Suggest last 3-5 messages with high recency weight
 // - Confidence: 0.96 (very sure based on this pattern)
 
-const recentContext = prediction.suggestedMemories
+const recentContext = prediction.memories
   .filter(m => m.confidence > 0.9);
 ```
 
@@ -229,7 +229,7 @@ const recentContext = prediction.suggestedMemories
 const userQuery = "How do I handle errors in Python?";
 
 // Predictive approach
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: `User query: "${userQuery}". Language: Python. Topic: Error handling`
 });
 
@@ -240,7 +240,7 @@ const prediction = await rb.metacognition.predict({
 // - Suggested weights: { semantic: 0.8, recency: 0.2 }
 // - Confidence: 0.93
 
-const docs = prediction.suggestedMemories.slice(0, 3);
+const docs = prediction.memories.slice(0, 3);
 ```
 
 **Result:** Most relevant Python error handling docs surfaced automatically.
@@ -252,7 +252,7 @@ const docs = prediction.suggestedMemories.slice(0, 3);
 const searchTerm = "wireless headphones";
 
 // Predictive approach
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: `Product search: "${searchTerm}". User tier: premium. Previous purchases: electronics`
 });
 
@@ -263,7 +263,7 @@ const prediction = await rb.metacognition.predict({
 // - Suggested weights: { recency: 0.7, semantic: 0.3 }
 // - Confidence: 0.88
 
-const products = prediction.suggestedMemories
+const products = prediction.memories
   .filter(m => m.confidence > 0.8);
 ```
 
@@ -307,18 +307,18 @@ This tells you how confident RecallBricks is about the **entire prediction**, no
 ### Using Confidence Scores
 
 ```typescript
-const prediction = await rb.metacognition.predict({ context: '...' });
+const prediction = await rb.predictMemories({ context: '...' });
 
 // Only use high-confidence predictions
 if (prediction.confidence > 0.85) {
-  const memories = prediction.suggestedMemories
+  const memories = prediction.memories
     .filter(m => m.confidence > 0.8);
 
   // Use these memories directly
   return memories;
 } else {
   // Fall back to traditional search
-  return await rb.memories.search({ query: '...' });
+  return await rb.search('...');
 }
 ```
 
@@ -332,12 +332,12 @@ RecallBricks improves predictions based on what you actually use.
 
 ```typescript
 // You request a prediction
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: 'User asking about API auth'
 });
 
-// You retrieve one of the suggested memories
-const memory = await rb.memories.get(prediction.suggestedMemories[0].id);
+// You use one of the suggested memories
+const memory = prediction.memories[0];
 
 // RecallBricks observes:
 // ✓ Prediction was correct (you used the suggestion)
@@ -349,11 +349,13 @@ const memory = await rb.memories.get(prediction.suggestedMemories[0].id);
 
 ```typescript
 // Provide explicit feedback
-await rb.metacognition.feedback({
-  predictionId: prediction.id,
-  useful: true,  // Was this prediction helpful?
-  usedMemories: ['mem_123', 'mem_456']  // Which ones did you use?
-});
+// Note: feedback() is available via REST API
+// POST /v1/metacognition/feedback
+// {
+//   "predictionId": "pred_123",
+//   "useful": true,
+//   "usedMemories": ["mem_123", "mem_456"]
+// }
 
 // RecallBricks learns:
 // - These specific memories were valuable
@@ -379,7 +381,7 @@ Week 4: Confidence 0.91, Accuracy 92%  (Well-trained model)
 
 **Solution:**
 ```typescript
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: `User: "${userMessage}". Turn: ${turnCount}. User ID: ${userId}`
 });
 
@@ -395,7 +397,7 @@ const prediction = await rb.metacognition.predict({
 
 **Solution:**
 ```typescript
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: `User typed: "${vague_query}". Previous successful queries: ${history}`
 });
 
@@ -409,7 +411,7 @@ const prediction = await rb.metacognition.predict({
 
 **Solution:**
 ```typescript
-const prediction = await rb.metacognition.predict({
+const prediction = await rb.predictMemories({
   context: `User viewing page: ${currentPage}. Time on page: ${time}. Scrolled to: ${scrollPosition}`
 });
 
@@ -426,12 +428,12 @@ const prediction = await rb.metacognition.predict({
 
 ```typescript
 // ❌ Minimal context
-await rb.metacognition.predict({
+await rb.predictMemories({
   context: 'user preferences'
 });
 
 // ✅ Rich context
-await rb.metacognition.predict({
+await rb.predictMemories({
   context: `User asked: "What documentation style do I prefer?".
             Session start: true.
             User tier: premium.
@@ -443,10 +445,10 @@ await rb.metacognition.predict({
 
 ```typescript
 // ✅ Use confidence thresholds
-const highConfidence = prediction.suggestedMemories
+const highConfidence = prediction.memories
   .filter(m => m.confidence > 0.85);
 
-const mediumConfidence = prediction.suggestedMemories
+const mediumConfidence = prediction.memories
   .filter(m => m.confidence >= 0.7 && m.confidence < 0.85);
 
 // Use high-confidence immediately
@@ -457,14 +459,14 @@ const mediumConfidence = prediction.suggestedMemories
 
 ```typescript
 // ✅ Hybrid approach
-const prediction = await rb.metacognition.predict({ context });
+const prediction = await rb.predictMemories({ context });
 
 if (prediction.confidence > 0.8) {
   // Use predictions
-  return prediction.suggestedMemories;
+  return prediction.memories;
 } else {
   // Fall back to traditional search
-  return await rb.memories.search({ query });
+  return await rb.search(query);
 }
 ```
 
@@ -472,11 +474,8 @@ if (prediction.confidence > 0.8) {
 
 ```typescript
 // ✅ Help the system learn
-await rb.metacognition.feedback({
-  predictionId: prediction.id,
-  useful: true,
-  usedMemories: actuallyUsedMemories
-});
+// Note: feedback() is available via REST API
+// POST /v1/metacognition/feedback
 ```
 
 ---
